@@ -33,12 +33,44 @@ celery.conf.update(app.config)
 model_factory = pd.read_csv('models_information/index.csv',index_col=0)
 
 @celery.task
-def model_fit(_id,mdl,train_data):
+def model_fit(_id,obj,paramsj,X_trainj,y_trainj):
     info_path = './models_information/'+_id+'_information'
     info_file = open(info_path,'w')
+    print('Model training begins!')
     try:
+        # read data
+        X_train = np.array(pd.DataFrame(json.loads(X_trainj)))
+        y_train = np.array(pd.DataFrame(json.loads(y_trainj)))[:,0]
+        params = json.loads(paramsj)
+
+        #print(y_train)
+        dm = DataManager(X_train, y_train)
+        train_data = dm.get_data_node(X_train, y_train)
+        save_dir = '../data/eval_exps/soln-ml'
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        # train mode
+        if(obj == 'clf'):
+            mdl = Classifier(time_limit=params['time_limit'],
+                    output_dir=save_dir,
+                    ensemble_method=params['ensemble_method'],
+                    evaluation=params['evaluation'],
+                    metric=params['metric'],
+                    n_jobs=4)
+
+        elif(obj == 'reg'):
+            mdl = rgs = Regressor(metric=params['metric'],
+                    ensemble_method=params['ensemble_method'],
+                    evaluation=params['evaluation'],
+                    time_limit=params['time_limit'],
+                    output_dir=save_dir,
+                    random_state=1,
+                    n_jobs=n_jobs)
+
         mdl.fit(train_data)
+
     except:
+        print('Model training failed!')
         info_file.write('Model training failed!')
         info_file.close()
         return -1
@@ -52,6 +84,7 @@ def model_fit(_id,mdl,train_data):
     #get_ens_model_info is not realized in this version yet
     info_file.write(json.dumps(result))
     info_file.close()
+    print('Model training finished!')
     return 0
 
 
@@ -79,39 +112,11 @@ class Train(Resource):
         params_file = request.files['params_file']
         obj = request.form['objective']
         # read data
-        X_train = np.array(pd.read_csv(X_file))
-        y_train = np.array(pd.read_csv(y_file))[:,0]
-        params = yaml.load(params_file)
+        X_train = pd.read_csv(X_file)
+        y_train = pd.read_csv(y_file)
+        paramsj = json.dumps(yaml.load(params_file))
 
-        #print(y_train)
-        if not (obj):
-            obj = 'clf'
-        dm = DataManager(X_train, y_train)
-        train_data = dm.get_data_node(X_train, y_train)
-        
-        save_dir = '../data/eval_exps/soln-ml'
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-
-        # train mode
-        if(obj == 'clf'):
-            mdl = Classifier(time_limit=params['time_limit'],
-                    output_dir=save_dir,
-                    ensemble_method=params['ensemble_method'],
-                    evaluation=params['evaluation'],
-                    metric=params['metric'],
-                    n_jobs=4)
-
-        elif(obj == 'reg'):
-            mdl = rgs = Regressor(metric=params['metric'],
-                    ensemble_method=params['ensemble_method'],
-                    evaluation=params['evaluation'],
-                    time_limit=params['time_limit'],
-                    output_dir=save_dir,
-                    random_state=1,
-                    n_jobs=n_jobs)
-
-        model_fit(_id,mdl,train_data)
+        model_fit.delay(_id,obj,paramsj,X_train.to_json(),y_train.to_json())
         model_factory.index.append(pd.Index([_id]))
         model_factory.loc[_id,'info_path'] = './models_information/'+_id+'_information'
         model_factory.to_csv('models_information/index.csv')
@@ -135,6 +140,8 @@ class Model_information(Resource):
             return ('Model '+_id+' is running and not completed!')
         info = info_file.read()
         info_file.close()
+        if(info==''):
+            return ('Model '+_id+' is running and not completed!')
         return info
 
 
