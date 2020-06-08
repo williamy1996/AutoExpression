@@ -18,10 +18,11 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import train_test_split
 
 sys.path.append(os.getcwd())
-from flask_api.utilities import cross_validate, read_params
 from solnml.utils.data_manager import DataManager
 from solnml.estimators import Classifier
 from werkzeug.datastructures import FileStorage
+
+def train_model(mdl):
 
 class Model(Resource):
 
@@ -55,7 +56,6 @@ class Models(Resource):
         return json.dumps(result)
 
 
-
 class Train(Resource):
 
     def __init__(self, model_factory):
@@ -70,6 +70,7 @@ class Train(Resource):
     def post(self):
         start_time = time.time()
         args = self.parser.parse_args()
+        _id = request.form['model_name']
         X_file = request.files['data_file_X']
         y_file = request.files['data_file_y']
         _id = request.form['model_name']
@@ -103,8 +104,7 @@ class Train(Resource):
                     output_dir=save_dir,
                     random_state=1,
                     n_jobs=n_jobs)
-            
-        mdl.fit(train_data)
+        model_fit(_id,mdl,train_data)
         self.model_factory.add_pipeline(mdl, train_data, _id)
         print(self.model_factory)
         result = {'trainTime': time.time()-start_time, 

@@ -1,0 +1,4 @@
+time_limit: 100
+evaluation: 'holdout'
+ensemble_method: 'bagging'
+metric: 'acc'
