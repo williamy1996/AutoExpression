@@ -1,25 +1,26 @@
 # -*- coding: utf-8 -*-
-"""
-automl_service.py
-~~~~~~~~~~~~~~~~~
-
-App implements an automl pipeline.
-
-"""
 
 import os
 import json
-
+import time
 from flask import Flask, request, jsonify
 import numpy as np
 import pandas as pd
+import argparse
 import requests
 import sklearn
-
+import werkzeug
 import resources
+from solnml.utils.data_manager import DataManager
+from solnml.estimators import Classifier
+from solnml.estimators import Regressor
+from werkzeug.datastructures import FileStorage
 
 from flask_restful import reqparse, abort, Api, Resource
 import yaml
+import sys
+from celery import Celery
+sys.path.append('../')
 
 app = Flask(__name__)
 api = Api(app)
@@ -29,7 +30,7 @@ app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
 
-model_factory = pd.read_csv('models_information/index.csv')
+model_factory = pd.read_csv('models_information/index.csv',index_col=0)
 
 @celery.task
 def model_fit(_id,mdl,train_data):
@@ -48,6 +49,7 @@ def model_fit(_id,mdl,train_data):
     result['best_perf'] = str(mdl.best_perf)
     result['best_fe_config'] = str(mdl.best_fe_config)
     result['get_ens_model_info'] = str(mdl.get_ens_model_info)
+    #get_ens_model_info is not realized in this version yet
     info_file.write(json.dumps(result))
     info_file.close()
     return 0
@@ -58,8 +60,6 @@ class Train(Resource):
     def __init__(self, model_factory):
         self.model_factory = model_factory
         self.parser = reqparse.RequestParser()
-        #self.parser.add_argument('params', type=str,
-            #location='files')
         self.parser.add_argument('data_file_X', type=FileStorage, 
             location='files')
         self.parser.add_argument('data_file_y', type=FileStorage,
@@ -89,7 +89,7 @@ class Train(Resource):
         dm = DataManager(X_train, y_train)
         train_data = dm.get_data_node(X_train, y_train)
         
-        save_dir = './data/eval_exps/soln-ml'
+        save_dir = '../data/eval_exps/soln-ml'
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
@@ -113,7 +113,7 @@ class Train(Resource):
 
         model_fit(_id,mdl,train_data)
         model_factory.index.append(pd.Index([_id]))
-        model_factory.loc[_id] = {'info_path':'./models_information/'+_id+'_information'}
+        model_factory.loc[_id,'info_path'] = './models_information/'+_id+'_information'
         model_factory.to_csv('models_information/index.csv')
         return ('Model '+_id+' is running!')
 
@@ -128,7 +128,7 @@ class Model_information(Resource):
         _id = request.form['model_name']
         if(_id not in list(self.model_factory.index)):
             return 'Error! No such model!'
-        info_path = self.model_factory.loc[_id]['info_path']
+        info_path = self.model_factory.loc[_id,'info_path']
         try:
             info_file = open(info_path,'r')
         except:

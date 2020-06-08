@@ -9,6 +9,7 @@ from flask import Flask,render_template,url_for,request
 from flask_restful import reqparse, Resource
 import numpy as np
 import pandas as pd
+
 import argparse
 import os
 import sys
@@ -18,11 +19,10 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import train_test_split
 
 sys.path.append(os.getcwd())
+sys.path.append('../')
 from solnml.utils.data_manager import DataManager
 from solnml.estimators import Classifier
 from werkzeug.datastructures import FileStorage
-
-def train_model(mdl):
 
 class Model(Resource):
 
