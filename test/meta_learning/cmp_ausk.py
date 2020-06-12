@@ -1,10 +1,10 @@
 import os
 import sys
+import shutil
 import time
 import pickle
 import argparse
 import numpy as np
-import autosklearn.classification
 from tabulate import tabulate
 from sklearn.metrics import make_scorer
 
@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--datasets', type=str, default='pc2')
 parser.add_argument('--mode', type=str, choices=['ausk', 'hmab', 'hmab,ausk', 'plot'], default='plot')
 parser.add_argument('--algo_num', type=int, default=15)
-parser.add_argument('--time_cost', type=int, default=600)
+parser.add_argument('--time_cost', type=int, default=1200)
 parser.add_argument('--rep_num', type=int, default=10)
 parser.add_argument('--start_id', type=int, default=0)
 parser.add_argument('--seed', type=int, default=1)
@@ -31,8 +31,8 @@ project_dir = './data/meta_exp/'
 per_run_time_limit = 120
 opt_algo = 'fixed'
 hmab_flag = 'hmab'
-ausk_flag = 'eval_ausk_mens'
-assert ausk_flag in ['eval_ausk_meta', 'eval_ausk_full', 'eval_ausk_vanilla', 'eval_ausk_mens']
+ausk_flag = 'eval_ausk_ens'
+assert ausk_flag in ['eval_ausk_meta', 'eval_ausk_full', 'eval_ausk_vanilla', 'eval_ausk_ens']
 if not os.path.exists(project_dir):
     os.makedirs(project_dir)
 
@@ -81,8 +81,15 @@ def evaluate_hmab(algorithms, dataset, run_id, trial_num, seed, time_limit=1200)
     with open(save_path, 'wb') as f:
         pickle.dump(data, f)
 
+    del_path = './logs/'
+    for i in os.listdir(del_path):
+        file_data = del_path + "/" + i
+        if os.path.isfile(file_data):
+            os.remove(file_data)
+
 
 def evaluate_autosklearn(algorithms, dataset, run_id, trial_num, seed, time_limit=1200):
+    import autosklearn.classification
     print('AUSK-%s-%d: %d' % (dataset, run_id, time_limit))
     if ausk_flag == 'eval_ausk_meta':
         alad = AlgorithmAdvisor(task_type=MULTICLASS_CLS, n_algorithm=9, metric='acc')
@@ -101,9 +108,9 @@ def evaluate_autosklearn(algorithms, dataset, run_id, trial_num, seed, time_limi
         include_models = algorithms
         n_config_meta_learning = 25
         ensemble_size = 1
-    elif ausk_flag == 'eval_ausk_mens':
+    elif ausk_flag == 'eval_ausk_ens':
         include_models = algorithms
-        n_config_meta_learning = 25
+        n_config_meta_learning = 0
         ensemble_size = 50
     else:
         include_models = algorithms
@@ -120,7 +127,6 @@ def evaluate_autosklearn(algorithms, dataset, run_id, trial_num, seed, time_limi
         ensemble_memory_limit=8192,
         ml_memory_limit=8192,
         ensemble_size=ensemble_size,
-        ensemble_nbest=ensemble_size,
         initial_configurations_via_metalearning=n_config_meta_learning,
         seed=int(seed),
         # resampling_strategy='cv',
@@ -128,7 +134,6 @@ def evaluate_autosklearn(algorithms, dataset, run_id, trial_num, seed, time_limi
         resampling_strategy='holdout',
         resampling_strategy_arguments={'train_size': 0.67}
     )
-    print(automl)
 
     train_data, test_data = load_train_test_data(dataset, task_type=MULTICLASS_CLS)
     X, y = train_data.data
@@ -152,6 +157,12 @@ def evaluate_autosklearn(algorithms, dataset, run_id, trial_num, seed, time_limi
         ausk_flag, dataset, trial_num, len(algorithms), seed, run_id, time_limit)
     with open(save_path, 'wb') as f:
         pickle.dump([dataset, val_result, test_result, model_desc], f)
+
+    del_path = '/tmp/'
+    for i in os.listdir(del_path):
+        file_data = del_path + "/" + i
+        if 'auto' in i:
+            shutil.rmtree(file_data)
 
 
 if __name__ == "__main__":
@@ -189,7 +200,7 @@ if __name__ == "__main__":
                         raise ValueError('Invalid parameter: %s' % mode)
         else:
             headers = ['dataset']
-            method_ids = ['hmab_fixed', 'eval_ausk_mens']
+            method_ids = ['hmab_fixed', 'eval_ausk_ens']
             for mth in method_ids:
                 headers.extend(['val-%s' % mth, 'test-%s' % mth])
 
@@ -204,11 +215,12 @@ if __name__ == "__main__":
                         file_path = project_dir + '%s_%s_%d_%d_%d_%d_%d.pkl' % (
                             mth, dataset, trial_num, len(algorithms), seed, run_id, time_t)
                         if not os.path.exists(file_path):
+                            print(file_path)
                             continue
                         with open(file_path, 'rb') as f:
                             data = pickle.load(f)
                         if mth.startswith('hmab'):
-                            val_acc, test_acc = data[1], data[3]
+                            val_acc, test_acc = data[1], data[2]
                         else:
                             val_acc, test_acc = data[1], data[2]
                         results.append([val_acc, test_acc])

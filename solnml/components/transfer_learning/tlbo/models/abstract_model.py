@@ -1,7 +1,7 @@
 import typing
 
 import numpy as np
-
+from typing import List, Optional, Tuple, Union
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.exceptions import NotFittedError
@@ -48,6 +48,7 @@ class AbstractModel(object):
                  seed: int,
                  instance_features: np.ndarray=None,
                  pca_components: float=None,
+                 return_normalized_y=False
                  ):
         """Constructor
 
@@ -77,6 +78,7 @@ class AbstractModel(object):
         self.seed = seed
         self.instance_features = instance_features
         self.pca_components = pca_components
+        self.return_normalized_y = return_normalized_y
 
         if instance_features is not None:
             self.n_feats = instance_features.shape[1]
@@ -101,7 +103,7 @@ class AbstractModel(object):
 
         self.logger = PickableLoggerAdapter(self.__module__ + "." + self.__class__.__name__)
 
-    def train(self, X: np.ndarray, Y: np.ndarray) -> 'AbstractEPM':
+    def train(self, X: np.ndarray, Y: np.ndarray) -> 'AbstractModel':
         """Trains the EPM on X and Y.
 
         Parameters
@@ -147,7 +149,7 @@ class AbstractModel(object):
 
         return self._train(X, Y)
 
-    def _train(self, X: np.ndarray, Y: np.ndarray) -> 'AbstractEPM':
+    def _train(self, X: np.ndarray, Y: np.ndarray) -> 'AbstractModel':
         """Trains the random forest on X and y.
 
         Parameters
@@ -281,3 +283,47 @@ class AbstractModel(object):
             var = var.reshape((-1, 1))
 
         return mean, var
+
+    def _normalize_y(self, y: np.ndarray) -> np.ndarray:
+        """Normalize data to zero mean unit standard deviation.
+
+        Parameters
+        ----------
+        y : np.ndarray
+            Targets for the Gaussian process
+
+        Returns
+        -------
+        np.ndarray
+        """
+        self.mean_y_ = np.mean(y)
+        self.std_y_ = np.std(y)
+        if self.std_y_ == 0:
+            self.std_y_ = 1
+        return (y - self.mean_y_) / self.std_y_
+
+    def _untransform_y(
+        self,
+        y: np.ndarray,
+        var: Optional[np.ndarray] = None,
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+        """Transform zeromean unit standard deviation data into the regular space.
+
+        This function should be used after a prediction with the Gaussian process which was trained on normalized data.
+
+        Parameters
+        ----------
+        y : np.ndarray
+            Normalized data.
+        var : np.ndarray (optional)
+            Normalized variance
+
+        Returns
+        -------
+        np.ndarray on Tuple[np.ndarray, np.ndarray]
+        """
+        y = y * self.std_y_ + self.mean_y_
+        if var is not None:
+            var = var * self.std_y_ ** 2
+            return y, var
+        return y
