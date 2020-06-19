@@ -472,3 +472,7 @@ class FirstLayerBandit(object):
     @property
     def best_hpo_config(self):
         return self.sub_bandits[self.optimal_algo_id].inc['hpo']
+
+    @property
+    def best_algo_path(self):
+        return os.path.join(self.output_dir, '%s-best_model' % self.timestamp)

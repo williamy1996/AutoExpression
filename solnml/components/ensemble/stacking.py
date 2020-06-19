@@ -170,10 +170,19 @@ class Stacking(BaseEnsembleModel):
             model_to_eval = self.stats[algo_id]['model_to_eval']
             for idx, (node, config) in enumerate(model_to_eval):
                 if not hasattr(self, 'base_model_mask') or self.base_model_mask[model_cnt] == 1:
-                    model_path = os.path.join(self.output_dir, '%s-stacking-model%d' % (self.timestamp, model_cnt))
+                    #model_path = os.path.join(self.output_dir, '%s-stacking-model%d' % (self.timestamp, model_cnt))
+                    model_path = []
+                    for j in range(self.kfold):
+                        model_path.append(os.path.join(self.output_dir, '%s-model%d_part%d' % (self.timestamp, model_cnt, j)))
                     ens_config.append((algo_id, node.config, config, model_path))
                 model_cnt += 1
         ens_info['ensemble_method'] = 'stacking'
         ens_info['config'] = ens_config
+        ens_info['kfold'] = self.kfold
         ens_info['meta_learner'] = self.meta_method
+        save_path = self.output_dir + '/stacking_meta_learner'+str(self.timestamp)+'.pkl'
+        ens_info['meta_learner_path'] = save_path
+        f = open(save_path,'wb')
+        pkl.dump(self.meta_learner,f)
+        f.close()
         return ens_info

@@ -167,4 +167,9 @@ class Blending(BaseEnsembleModel):
         ens_info['ensemble_method'] = 'blending'
         ens_info['config'] = ens_config
         ens_info['meta_learner'] = self.meta_method
+        save_path = self.output_dir + '/blending_meta_learner'+str(self.timestamp)+'.pkl'
+        ens_info['meta_learner_path'] = save_path
+        f = open(save_path,'wb')
+        pkl.dump(self.meta_learner,f)
+        f.close()
         return ens_info

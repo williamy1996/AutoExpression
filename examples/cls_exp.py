@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 import time
-
+from solnml.utils import saveloadmodel
 from sklearn.datasets import load_iris
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import train_test_split
@@ -43,3 +43,11 @@ clf = Classifier(time_limit=time_limit,output_dir=save_dir,ensemble_method=ensem
 clf.fit(train_data)
 pred = clf.predict(test_data)
 print(balanced_accuracy_score(test_data.data[1], pred))
+
+
+#save and load example
+
+saveloadmodel.save_model(clf,'./data/model_clf9')
+ens = saveloadmodel.load_model('./data/model_clf9')
+print(ens.predict_proba(X_test))
+

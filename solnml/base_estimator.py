@@ -94,6 +94,10 @@ class BaseEstimator(object):
         return self._ml_engine.solver.optimal_algo_id
 
     @property
+    def best_algo_path(self):
+        return self._ml_engine.solver.optimal_algo_id
+
+    @property
     def nbest_algo_id(self):
         return self._ml_engine.solver.nbest_algo_ids
 
