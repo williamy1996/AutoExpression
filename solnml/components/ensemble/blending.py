@@ -49,7 +49,7 @@ class Blending(BaseEnsembleModel):
                 from lightgbm import LGBMRegressor
                 self.meta_learner = LGBMRegressor(max_depth=4, learning_rate=0.05, n_estimators=70)
 
-    def fit(self, data):
+    def fit(self, data, solvers = None):
         # Split training data for phase 1 and phase 2
         test_size = 0.2
 
@@ -76,6 +76,11 @@ class Blending(BaseEnsembleModel):
                     with open(os.path.join(self.output_dir, '%s-blending-model%d' % (self.timestamp, model_cnt)),
                               'wb') as f:
                         pkl.dump(estimator, f)
+
+                    if(solvers is not None):
+                        fe_savepath = os.path.join(self.output_dir, '%s-blending-fe%d' % (self.timestamp, model_cnt))
+                        solvers[algo_id].optimizer['fe'].save(node,fe_savepath)
+
                     if self.task_type in CLS_TASKS:
                         pred = estimator.predict_proba(x_p2)
                         n_dim = np.array(pred).shape[1]
@@ -162,7 +167,8 @@ class Blending(BaseEnsembleModel):
             for idx, (node, config) in enumerate(model_to_eval):
                 if not hasattr(self, 'base_model_mask') or self.base_model_mask[model_cnt] == 1:
                     model_path = os.path.join(self.output_dir, '%s-blending-model%d' % (self.timestamp, model_cnt))
-                    ens_config.append((algo_id, node.config, config, model_path))
+                    fe_path = os.path.join(self.output_dir, '%s-blending-fe%d' % (self.timestamp, model_cnt))
+                    ens_config.append((algo_id, node.config, config, model_path, fe_path))
                 model_cnt += 1
         ens_info['ensemble_method'] = 'blending'
         ens_info['config'] = ens_config

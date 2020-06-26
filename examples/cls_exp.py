@@ -2,7 +2,6 @@ import argparse
 import os
 import sys
 import time
-from solnml.utils import saveloadmodel
 from sklearn.datasets import load_iris
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import train_test_split
@@ -10,11 +9,12 @@ from sklearn.model_selection import train_test_split
 sys.path.append(os.getcwd())
 from solnml.utils.data_manager import DataManager
 from solnml.estimators import Classifier
+from solnml.utils import saveloadmodel
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--time_limit', type=int, default=1200)
 parser.add_argument('--eval_type', type=str, default='holdout', choices=['holdout', 'cv', 'partial'])
-parser.add_argument('--ens_method', default='ensemble_selection',choices=['none', 'bagging', 'blending', 'stacking', 'ensemble_selection'])
+parser.add_argument('--ens_method', default='blending',choices=['none', 'bagging', 'blending', 'stacking', 'ensemble_selection'])
 parser.add_argument('--n_jobs', type=int, default=1)
 
 args = parser.parse_args()
@@ -42,12 +42,13 @@ test_data = dm.get_data_node(X_test, y_test)
 clf = Classifier(time_limit=time_limit,output_dir=save_dir,ensemble_method=ensemble_method,evaluation=eval_type,metric='acc',n_jobs=n_jobs)
 clf.fit(train_data)
 pred = clf.predict(test_data)
+print(pred)
 print(balanced_accuracy_score(test_data.data[1], pred))
 
 
 #save and load example
 
-saveloadmodel.save_model(clf,'./data/model_clf9')
-ens = saveloadmodel.load_model('./data/model_clf9')
-print(ens.predict_proba(X_test))
+#saveloadmodel.save_model(clf,'./data/model_clf9')
+#ens = saveloadmodel.load_model('./data/model_clf9')
+#print(ens.predict_proba(X_test))
 

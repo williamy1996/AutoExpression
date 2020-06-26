@@ -13,7 +13,18 @@ from solnml.components.evaluators.base_evaluator import _BaseEvaluator
 from solnml.components.utils.constants import CLS_TASKS
 from solnml.components.feature_engineering import TRANS_CANDIDATES
 from litebo.facade.bo_facade import BayesianOptimization as BO
-
+from solnml.utils.data_manager import DataManager
+import pickle
+class fe_operators():
+    def __init__(self,fe_list):
+        self.list = fe_list
+    def operate(self,data):
+        dm = DataManager(data)
+        data = dm.get_data_node(data,[])
+        for fe in self.list:
+            if fe is not None:
+                data = fe.operate(data)
+        return data.data[0]
 
 class BayesianOptimizationOptimizer(Optimizer):
     def __init__(self, task_type, input_data: DataNode, evaluator: _BaseEvaluator,
@@ -310,6 +321,7 @@ class BayesianOptimizationOptimizer(Optimizer):
                 self.node_dict[config[0]] = [node, tran_list]
             except:
                 print("Re-parse failed on config %s" % str(config[0]))
+            #save node_dict[][1]
         return node_list
 
     def fetch_nodes_by_config(self, config_list):
@@ -358,3 +370,20 @@ class BayesianOptimizationOptimizer(Optimizer):
             self.logger.info(str(self.node_dict))
             raise ValueError("Ref node not in history!")
         return input_node
+
+    def save(self, ref_node: DataNode, savepath):
+        fe_config = ref_node.config
+        if ref_node is None:
+            fe_op = fe_operators([])
+            pickle.dump(fe_op,open(savepath,'wb'))
+        elif fe_config in self.node_dict:
+            fe_trans_list = self.node_dict[fe_config][1]
+            fe_op = fe_operators(fe_trans_list)
+            pickle.dump(fe_op,open(savepath,'wb'))
+            #print('dump model '+savepath)
+        else:
+            self.logger.info("Ref node config:")
+            self.logger.info(str(fe_config))
+            self.logger.info("Node history in optimizer:")
+            self.logger.info(str(self.node_dict))
+            raise ValueError("Ref node not in history!")

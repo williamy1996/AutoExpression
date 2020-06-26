@@ -43,13 +43,13 @@ class EnsembleBuilder:
         else:
             raise ValueError("%s is not supported for ensemble!" % ensemble_method)
 
-    def fit(self, data):
-        return self.model.fit(data)
+    def fit(self, data, solvers = None):
+        return self.model.fit(data, solvers)
 
     def predict(self, data, solvers):
         return self.model.predict(data, solvers)
 
-    def refit(self):
+    def refit(self, solvers = None):
         return self.model.refit()
 
     def get_ens_model_info(self):

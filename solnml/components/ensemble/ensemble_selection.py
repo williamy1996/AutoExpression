@@ -45,7 +45,7 @@ class EnsembleSelection(BaseEnsembleModel):
         score = self.metric._score_func(y_true, pred) * self.metric._sign
         return score
 
-    def fit(self, data):
+    def fit(self, data, solvers = None):
         if len(self.train_labels.shape) == 1 and self.task_type in CLS_TASKS:
             reshape_y = np.reshape(self.train_labels, (len(self.train_labels), 1))
             self.encoder.fit(reshape_y)
@@ -256,7 +256,7 @@ class EnsembleSelection(BaseEnsembleModel):
                           enumerate(self.identifiers_)
                           if self.weights_[idx] > 0]))
 
-    def refit(self):
+    def refit(self, solvers = None):
         # Refit models on whole training data
         model_cnt = 0
         for algo_id in self.stats["include_algorithms"]:
@@ -272,6 +272,10 @@ class EnsembleSelection(BaseEnsembleModel):
                     with open(os.path.join(self.output_dir, '%s-model%d' % (self.timestamp, model_cnt)),
                               'wb') as f:
                         pkl.dump(estimator, f)
+
+                    if(solvers is not None):
+                        fe_savepath = os.path.join(self.output_dir, '%s-fe%d' % (self.timestamp, model_cnt))
+                        solvers[algo_id].optimizer['fe'].save(node,fe_savepath)
                 model_cnt += 1
 
     def get_models_with_weights(self, models):
@@ -309,7 +313,8 @@ class EnsembleSelection(BaseEnsembleModel):
             for idx, (node, config) in enumerate(model_to_eval):
                 if not hasattr(self, 'base_model_mask') or self.base_model_mask[model_cnt] == 1:
                     model_path = os.path.join(self.output_dir, '%s-model%d' % (self.timestamp, model_cnt))
-                    ens_config.append((algo_id, node.config, config, model_path))
+                    fe_path = os.path.join(self.output_dir, '%s-fe%d' % (self.timestamp, model_cnt))
+                    ens_config.append((algo_id, node.config, config, model_path,fe_path))
                 model_cnt += 1
         ens_info['ensemble_method'] = 'ensemble_selection'
         ens_info['config'] = ens_config

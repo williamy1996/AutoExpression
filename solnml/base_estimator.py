@@ -95,7 +95,7 @@ class BaseEstimator(object):
 
     @property
     def best_algo_path(self):
-        return self._ml_engine.solver.optimal_algo_id
+        return self._ml_engine.solver.best_algo_path
 
     @property
     def nbest_algo_id(self):
@@ -112,6 +112,10 @@ class BaseEstimator(object):
     @property
     def best_fe_config(self):
         return self._ml_engine.solver.best_data_node.config
+
+    @property
+    def best_fe_path(self):
+        return self._ml_engine.solver.best_fe_path
 
     def data_transform(self, data: DataNode):
         return self._ml_engine.solver.fe_optimizer.apply(data, self._ml_engine.solver.best_data_node)

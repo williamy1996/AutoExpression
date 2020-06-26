@@ -22,7 +22,7 @@ class Bagging(BaseEnsembleModel):
                          metric=metric,
                          output_dir=output_dir)
 
-    def fit(self, datanode):
+    def fit(self, datanode, solvers = None):
         model_cnt = 0
         for algo_id in self.stats["include_algorithms"]:
             model_to_eval = self.stats[algo_id]['model_to_eval']
@@ -35,6 +35,10 @@ class Bagging(BaseEnsembleModel):
                     with open(os.path.join(self.output_dir, '%s-bagging-model%d' % (self.timestamp, model_cnt)),
                               'wb') as f:
                         pkl.dump(estimator, f)
+                    if(solvers is not None):
+                        fe_savepath = os.path.join(self.output_dir, '%s-bagging-fe%d' % (self.timestamp, model_cnt))
+                        solvers[algo_id].optimizer['fe'].save(node,fe_savepath)
+
                 model_cnt += 1
         return self
 
@@ -47,6 +51,7 @@ class Bagging(BaseEnsembleModel):
             model_to_eval = self.stats[algo_id]['model_to_eval']
             for idx, (node, config) in enumerate(model_to_eval):
                 test_node = solvers[algo_id].optimizer['fe'].apply(data, node)
+
                 if self.base_model_mask[model_cnt] == 1:
                     with open(os.path.join(self.output_dir, '%s-bagging-model%d' % (self.timestamp, model_cnt)),
                               'rb') as f:
@@ -74,7 +79,8 @@ class Bagging(BaseEnsembleModel):
             for idx, (node, config) in enumerate(model_to_eval):
                 if not hasattr(self, 'base_model_mask') or self.base_model_mask[model_cnt] == 1:
                     model_path = os.path.join(self.output_dir, '%s-bagging-model%d' % (self.timestamp, model_cnt))
-                    ens_config.append((algo_id, node.config, config, model_path))
+                    fe_path = os.path.join(self.output_dir, '%s-bagging-fe%d' % (self.timestamp, model_cnt))
+                    ens_config.append((algo_id, node.config, config, model_path, fe_path))
                 model_cnt += 1
         ens_info['ensemble_method'] = 'bagging'
         ens_info['config'] = ens_config

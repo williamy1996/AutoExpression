@@ -54,7 +54,7 @@ class Stacking(BaseEnsembleModel):
                 from lightgbm import LGBMRegressor
                 self.meta_learner = LGBMRegressor(max_depth=4, learning_rate=0.05, n_estimators=70)
 
-    def fit(self, data):
+    def fit(self, data, solvers = None):
         # Split training data for phase 1 and phase 2
         if self.task_type in CLS_TASKS:
             kf = StratifiedKFold(n_splits=self.kfold)
@@ -80,6 +80,11 @@ class Stacking(BaseEnsembleModel):
                                 os.path.join(self.output_dir, '%s-model%d_part%d' % (self.timestamp, model_cnt, j)),
                                 'wb') as f:
                             pkl.dump(estimator, f)
+
+                        if(solvers is not None):
+                            fe_savepath = os.path.join(self.output_dir, '%s-fe%d_part%d' % (self.timestamp, model_cnt, j))
+                            solvers[algo_id].optimizer['fe'].save(node,fe_savepath)
+
                         if self.task_type in CLS_TASKS:
                             pred = estimator.predict_proba(x_p2)
                             n_dim = np.array(pred).shape[1]
@@ -172,9 +177,11 @@ class Stacking(BaseEnsembleModel):
                 if not hasattr(self, 'base_model_mask') or self.base_model_mask[model_cnt] == 1:
                     #model_path = os.path.join(self.output_dir, '%s-stacking-model%d' % (self.timestamp, model_cnt))
                     model_path = []
+                    fe_path = []
                     for j in range(self.kfold):
                         model_path.append(os.path.join(self.output_dir, '%s-model%d_part%d' % (self.timestamp, model_cnt, j)))
-                    ens_config.append((algo_id, node.config, config, model_path))
+                        fe_path.append(os.path.join(self.output_dir, '%s-fe%d_part%d' % (self.timestamp, model_cnt, j)))
+                    ens_config.append((algo_id, node.config, config, model_path, fe_path))
                 model_cnt += 1
         ens_info['ensemble_method'] = 'stacking'
         ens_info['config'] = ens_config

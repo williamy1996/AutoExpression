@@ -147,6 +147,9 @@ class FirstLayerBandit(object):
         with open(os.path.join(self.output_dir, '%s-best_model' % self.timestamp), 'wb') as f:
             pkl.dump(best_estimator, f)
 
+        fe_savepath = os.path.join(self.output_dir, '%s-best_fe' % self.timestamp)
+        self.fe_optimizer.save(self.best_data_node,fe_savepath)
+
         if self.ensemble_method is not None:
             # stats = self.fetch_ensemble_members()
             stats = self.fetch_ensemble_members_ano()
@@ -158,11 +161,11 @@ class FirstLayerBandit(object):
                                       task_type=self.task_type,
                                       metric=self.metric,
                                       output_dir=self.output_dir)
-            self.es.fit(data=self.original_data)
+            self.es.fit(data=self.original_data, solvers = self.sub_bandits)
 
     def refit(self):
         if self.ensemble_method is not None:
-            self.es.refit()
+            self.es.refit(self.sub_bandits)
 
     def _best_predict(self, test_data: DataNode):
         # Check the validity of feature engineering.
@@ -476,3 +479,7 @@ class FirstLayerBandit(object):
     @property
     def best_algo_path(self):
         return os.path.join(self.output_dir, '%s-best_model' % self.timestamp)
+
+    @property
+    def best_fe_path(self):
+        return os.path.join(self.output_dir, '%s-best_fe' % self.timestamp)
