@@ -12,7 +12,7 @@ build/*
 .coverage
 .cache
 .pytest_cache
-
+test.ipynb
 # developer environments
 .idea
 .vscode

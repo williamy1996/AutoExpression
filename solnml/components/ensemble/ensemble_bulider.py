@@ -50,7 +50,7 @@ class EnsembleBuilder:
         return self.model.predict(data, solvers)
 
     def refit(self, solvers = None):
-        return self.model.refit()
+        return self.model.refit(solvers)
 
     def get_ens_model_info(self):
         return self.model.get_ens_model_info()
