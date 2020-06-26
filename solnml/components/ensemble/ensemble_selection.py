@@ -74,6 +74,18 @@ class EnsembleSelection(BaseEnsembleModel):
                     self.model_idx.append(model_cnt)
                 model_cnt += 1
 
+        model_cnt = 0
+
+        for algo_id in self.stats["include_algorithms"]:
+            model_to_eval = self.stats[algo_id]['model_to_eval']
+            for idx, (node, config) in enumerate(model_to_eval):
+                X, y = node.data
+                if 1:
+                    if(solvers is not None):
+                        fe_savepath = os.path.join(self.output_dir, '%s-fe%d' % (self.timestamp, model_cnt))
+                        solvers[algo_id].optimizer['fe'].save(node,fe_savepath)
+                model_cnt += 1
+
         return self
 
     def _fit(self, predictions, labels):
@@ -274,6 +286,7 @@ class EnsembleSelection(BaseEnsembleModel):
                         pkl.dump(estimator, f)
 
                     if(solvers is not None):
+                        print('saving fe ###########')
                         fe_savepath = os.path.join(self.output_dir, '%s-fe%d' % (self.timestamp, model_cnt))
                         solvers[algo_id].optimizer['fe'].save(node,fe_savepath)
                 model_cnt += 1

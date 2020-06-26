@@ -165,7 +165,7 @@ class FirstLayerBandit(object):
 
     def refit(self):
         if self.ensemble_method is not None:
-            self.es.refit(self.sub_bandits)
+            self.es.refit(solvers = self.sub_bandits)
 
     def _best_predict(self, test_data: DataNode):
         # Check the validity of feature engineering.
