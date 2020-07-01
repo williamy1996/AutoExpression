@@ -286,3 +286,78 @@ def load_model(save_dir):
     mdl_list = [[fe_list[i],mdl_list[i]] for i in range(len(mdl_list))]
     
     return Ensemble_models(ens_info,mdl_list)
+
+class bio_models():
+    def __init__(self,ensemble_info, mdl_list, imp_ope_list, fb):
+        self.ensemble_info = ensemble_info
+        self.model_list = mdl_list
+        self.fb = fb
+        self.imp_ope_list = imp_ope_list
+    def predict_proba(self,test_x):
+        #ONLY FOR CLF MODEL
+        if self.ensemble_info['task_type'] == 'RGS':
+            print('Regression model does not have \'predict_proba\'.')
+            return 'Regression model does not have \'predict_proba\'.'
+        if self.fb is not None:
+            test_x = self.fb.transform(test_x)
+        y_pred = None
+        for key in mdl_list:
+            if(np.sum(np.isnan(test_x)) > 0):
+                test_x_filled = self.imp_ope_list[key].fit_transform(test_x)
+            else:
+                test_x_filled = test_x
+            if y_pred is None:
+                y_pred = mdl[key].predict_proba(test_x_filled)
+            else:
+                y_pred += mdl[key].predict_proba(test_x_filled)
+        y_pred = y_pred/len(mdl_list)
+        return y_pred
+
+    def predict(self,test_x):
+        if self.ensemble_info['task_type'] == 'CLS':
+            return np.argmax(self.predict_proba(test_x),axis=1)
+        if self.fb is not None:
+            test_x = self.fb.transform(test_x)
+        y_pred = None
+        for key in mdl_list:
+            if(np.sum(np.isnan(test_x)) > 0):
+                test_x_filled = self.imp_ope_list[key].fit_transform(test_x)
+            else:
+                test_x_filled = test_x
+            if y_pred is None:
+                y_pred = mdl[key].predict(test_x_filled)
+            else:
+                y_pred += mdl[key].predict(test_x_filled)
+        y_pred = y_pred/len(mdl_list)
+        return y_pred
+
+def save(biomdl, save_dir, task_type):
+    print("PLEASE SAVE THE MODEL IN A NEW FOLDER OR AN EMPTY FOLDER")
+    f_ens_info = open(save_dir +'/ens_info','w')
+    ens_dict = {}
+    ens_dict['task_type'] = task_type
+    ens_dict['impute_method'] = biomdl.impute_method
+    f_ens_info.write(json.dumps(ens_dict))
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    if biomdl.fb_operator is not None:
+        pkl.dump(biomdl.fb_operator,save_dir+'/fb.pkl')
+    for key in biomdl.impute_method:
+        pkl.dump(biomdl.impute_operator[key],save_dir+'/'+key+'.pkl')
+        save_model(biomdl.mdl[key],save_dir+'/'+key+'_models')
+
+
+def load(save_dir):
+    f_ens_info = open(save_dir +'/ens_info','r')
+    ens_info = json.loads(f_ens_info.read())
+    f_ens_info.close()
+    mdl_list = {}
+    imp_ope_list = {}
+    if os.path.exists(save_dir+'/fb.pkl'):
+        fb = pkl.load(save_dir+'/fb.pkl')
+    else:
+        fb = None
+    for method in ens_info['impute_method']:
+        mdl_list[method] = load_model(save_dir+'/'+method+'_models')
+        imp_ope_list[method] = pkl.load(save_dir+'/'+method+'.pkl')
+    return bio_models(ens_info,mdl_list,imp_ope_list,fb)

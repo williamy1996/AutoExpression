@@ -120,15 +120,17 @@ class BaseEstimator(object):
     def data_transform(self, data: DataNode):
         return self._ml_engine.solver.fe_optimizer.apply(data, self._ml_engine.solver.best_data_node)
 
-    def feature_corelation(self, data: DataNode):
+    def feature_corelation(self, data: DataNode, transformed_data_index = None):
         X0, y0 = data.data
-        X, y = self.data_transformer(data).data
+        X, y = self.data_transform(data).data
         i = X0.shape[1]
+        if transformed_data_index is not None:
+            X = X[:,transformed_data_index]
         j = X.shape[1]
         corre_mat = np.zeros([i, j])
         for it in range(i):
             for jt in range(j):
-                corre_mat[it, jt] = np.corrcoef(X0[:, it], X[:, jt])[0, 1]
+                corre_mat[jt, it] = np.corrcoef(X0[:, it], X[:, jt])[0, 1]
         df = pd.DataFrame(corre_mat)
         df.columns = ['origin_fearure' + str(it) for it in range(i)]
         df.index = ['transformed_fearure' + str(jt) for jt in range(j)]
