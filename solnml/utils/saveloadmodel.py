@@ -12,7 +12,6 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import train_test_split
 from solnml.utils.data_manager import DataManager
 from solnml.estimators import Classifier
-from solnml.utils import saveloadmodel
 
 class Ensemble_models:
     def __init__(self,ensemble_info,mdl_list):
@@ -290,7 +289,7 @@ def load_model(save_dir):
 class bio_models():
     def __init__(self,ensemble_info, mdl_list, imp_ope_list, fb):
         self.ensemble_info = ensemble_info
-        self.model_list = mdl_list
+        self.mdl_list = mdl_list
         self.fb = fb
         self.imp_ope_list = imp_ope_list
     def predict_proba(self,test_x):
@@ -301,38 +300,40 @@ class bio_models():
         if self.fb is not None:
             test_x = self.fb.transform(test_x)
         y_pred = None
-        for key in mdl_list:
+        for key in self.mdl_list:
             if(np.sum(np.isnan(test_x)) > 0):
                 test_x_filled = self.imp_ope_list[key].fit_transform(test_x)
             else:
                 test_x_filled = test_x
             if y_pred is None:
-                y_pred = mdl[key].predict_proba(test_x_filled)
+                y_pred = self.mdl_list[key].predict_proba(test_x_filled)
             else:
-                y_pred += mdl[key].predict_proba(test_x_filled)
-        y_pred = y_pred/len(mdl_list)
+                y_pred += self.mdl_list[key].predict_proba(test_x_filled)
+        y_pred = y_pred/len(self.mdl_list)
         return y_pred
 
     def predict(self,test_x):
-        if self.ensemble_info['task_type'] == 'CLS':
+        if self.ensemble_info['task_type'] == 'CLF':
             return np.argmax(self.predict_proba(test_x),axis=1)
         if self.fb is not None:
             test_x = self.fb.transform(test_x)
         y_pred = None
-        for key in mdl_list:
+        for key in self.mdl_list:
             if(np.sum(np.isnan(test_x)) > 0):
                 test_x_filled = self.imp_ope_list[key].fit_transform(test_x)
             else:
                 test_x_filled = test_x
             if y_pred is None:
-                y_pred = mdl[key].predict(test_x_filled)
+                y_pred = self.mdl_list[key].predict(test_x_filled)
             else:
-                y_pred += mdl[key].predict(test_x_filled)
-        y_pred = y_pred/len(mdl_list)
+                y_pred += self.mdl_list[key].predict(test_x_filled)
+        y_pred = y_pred/len(self.mdl_list)
         return y_pred
 
 def save(biomdl, save_dir, task_type):
     print("PLEASE SAVE THE MODEL IN A NEW FOLDER OR AN EMPTY FOLDER")
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
     f_ens_info = open(save_dir +'/ens_info','w')
     ens_dict = {}
     ens_dict['task_type'] = task_type
@@ -341,9 +342,9 @@ def save(biomdl, save_dir, task_type):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     if biomdl.fb_operator is not None:
-        pkl.dump(biomdl.fb_operator,save_dir+'/fb.pkl')
+        pkl.dump(biomdl.fb_operator,open(save_dir+'/fb.pkl','wb'))
     for key in biomdl.impute_method:
-        pkl.dump(biomdl.impute_operator[key],save_dir+'/'+key+'.pkl')
+        pkl.dump(biomdl.impute_operator[key],open(save_dir+'/'+key+'.pkl','wb'))
         save_model(biomdl.mdl[key],save_dir+'/'+key+'_models')
 
 
@@ -354,10 +355,10 @@ def load(save_dir):
     mdl_list = {}
     imp_ope_list = {}
     if os.path.exists(save_dir+'/fb.pkl'):
-        fb = pkl.load(save_dir+'/fb.pkl')
+        fb = pkl.load(open(save_dir+'/fb.pkl','rb'))
     else:
         fb = None
     for method in ens_info['impute_method']:
         mdl_list[method] = load_model(save_dir+'/'+method+'_models')
-        imp_ope_list[method] = pkl.load(save_dir+'/'+method+'.pkl')
+        imp_ope_list[method] = pkl.load(open(save_dir+'/'+method+'.pkl','rb'))
     return bio_models(ens_info,mdl_list,imp_ope_list,fb)

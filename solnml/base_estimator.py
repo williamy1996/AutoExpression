@@ -127,7 +127,7 @@ class BaseEstimator(object):
         if transformed_data_index is not None:
             X = X[:,transformed_data_index]
         j = X.shape[1]
-        corre_mat = np.zeros([i, j])
+        corre_mat = np.zeros([j, i])
         for it in range(i):
             for jt in range(j):
                 corre_mat[jt, it] = np.corrcoef(X0[:, it], X[:, jt])[0, 1]
