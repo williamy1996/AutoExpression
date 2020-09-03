@@ -1,0 +1,7 @@
+#
+usps linear_svm percentile: 10
+cross accuracy =  0.927479041187604
+
+#
+usps linear_svm percentile: 20
+cross accuracy =  0.9385602962888754

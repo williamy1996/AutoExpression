@@ -1,0 +1,25 @@
+#
+n_splits: 5
+cmim madelon knn
+[0.78615385, 0.78423077, 0.75038462, 0.73961538, 0.74153846, 0.73538462,
+ 0.71615385, 0.71269231, 0.69846154, 0.70538462]
+
+#
+linear_svm
+fold: 1
+selected features: 10 accu: 0.5
+selected features: 20 accu: 0.49423076923076925
+selected features: 30 accu: 0.49615384615384617
+selected features: 40 accu: 0.5
+selected features: 50 accu: 0.4980769230769231
+selected features: 60 accu: 0.5346153846153846
+selected features: 70 accu: 0.5
+selected features: 80 accu: 0.5019230769230769
+selected features: 90 accu: 0.5115384615384615
+selected features: 100 accu: 0.5076923076923077
+
+#
+n_splits: 5
+cmim madelon logistic
+[0.59230769, 0.6,        0.59807692, 0.60192308, 0.60576923, 0.60576923,
+ 0.6,        0.58461538, 0.58461538, 0.58269231]

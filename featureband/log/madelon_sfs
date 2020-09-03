@@ -1,0 +1,62 @@
+#1
+percent: 10
+clf: knn
+valid_perf: 0.9051282051282051
+cross_perf: 0.8857692307692308
+time: 708.8961515426636s
+
+#2
+percent: 20
+clf: knn
+valid_perf: 0.9102564102564102
+cross_perf: 0.8938461538461537
+time: 2746.6408343315125s
+
+#3
+percnet: 30
+clf: knn
+valid_perf: 0.9025641025641026
+cross_perf: 0.8834615384615384
+time: 6701.495289564133s
+
+#4
+percent: 40
+clf: knn
+valid_perf: 0.8961538461538462
+cross_perf: 0.8596153846153847
+time: 12447.551398992538s
+
+#5
+percent: 50
+clf: knn
+valid_perf: 0.8935897435897436
+cross_perf: 0.8469230769230769
+time: 19396.412857294083s
+
+#6
+percent: 60
+clf: knn
+valid_perf: 0.867948717948718
+cross_perf: 0.8315384615384614
+time: 26968.939716100693s
+
+#7
+percent: 70
+clf: knn
+valid_perf: 0.8512820512820513
+cross_perf: 0.7949999999999999
+time: 34472.7509458065s
+
+#8
+percent: 80
+clf: knn
+valid_perf: 0.8179487179487179
+cross_perf: 0.7673076923076922
+time: 40965.18648529053s
+
+#9
+percent: 90
+clf: knn
+valid_perf: 0.7948717948717948
+cross_perf: 0.7353846153846154
+time: 45394.41808652878s

@@ -1,0 +1,8 @@
+#
+percent: 10
+max_iter: 50
+cross: 0.913
+
+#
+basehock knn percentile: 20
+cross accuracy =  0.9192232120196945
